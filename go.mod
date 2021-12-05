@@ -1,0 +1,8 @@
+module github.com/RymarSergey/ardanolabs2
+
+go 1.15
+
+require (
+	github.com/ardanlabs/conf v1.5.0
+	github.com/pkg/errors v0.9.1
+)
