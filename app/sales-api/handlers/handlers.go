@@ -3,17 +3,17 @@
 package handlers
 
 import (
-	"github.com/dimfeld/httptreemux/v5"
+	"github.com/RymarSergey/ardanolabs2/foundation/web"
 	"log"
 	"net/http"
 	"os"
 )
 
 //API constructs an http.Handler with all application routes defined.
-func API(build string, shutdown chan os.Signal, log *log.Logger) *httptreemux.ContextMux {
-	tm := httptreemux.NewContextMux()
+func API(build string, shutdown chan os.Signal, log *log.Logger) *web.App {
+	app := web.NewApp()
 	check := check{log: log}
-	tm.Handle(http.MethodGet, "/test", check.readiness)
+	app.Handle(http.MethodGet, "/test", check.readiness)
 
-	return tm
+	return app
 }
