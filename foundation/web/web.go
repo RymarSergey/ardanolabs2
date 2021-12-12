@@ -4,10 +4,25 @@ package web
 import (
 	"context"
 	"github.com/dimfeld/httptreemux/v5"
+	"github.com/google/uuid"
 	"net/http"
 	"os"
 	"syscall"
+	"time"
 )
+
+//ctxKey represents the type of value for the ctxKey
+type ctxKey int
+
+//KeyValue is how request values are stored/retrieved
+const KeyValue ctxKey = 1
+
+//
+type Values struct {
+	TraceID    string
+	Now        time.Time
+	StatusCode int
+}
 
 //Handler is a type that handles the http request within our own little mini framework.
 type Handler func(context context.Context, w http.ResponseWriter, r *http.Request) error
@@ -17,13 +32,15 @@ type Handler func(context context.Context, w http.ResponseWriter, r *http.Reques
 type App struct {
 	*httptreemux.ContextMux
 	shutdown chan os.Signal
+	mw       []Middleware
 }
 
 //NewApp create an App value that handle the set of routes for the application
-func NewApp(shutdown chan os.Signal) *App {
+func NewApp(shutdown chan os.Signal, mw ...Middleware) *App {
 	app := App{
 		ContextMux: httptreemux.NewContextMux(),
 		shutdown:   shutdown,
+		mw:         mw,
 	}
 	return &app
 }
@@ -35,12 +52,24 @@ func (a *App) SignalShutdown() {
 }
 
 //Handle ...
-func (a *App) Handle(method string, path string, readiness Handler) {
+func (a *App) Handle(method string, path string, handler Handler, mw ...Middleware) {
+
+	//First wrap handler specific middleware around this handler
+	handler = wrapMiddleware(mw, handler)
+
+	//Add the application's general middleware to the handler chain.
+	handler = wrapMiddleware(a.mw, handler)
+
 	h := func(w http.ResponseWriter, r *http.Request) {
 
-		//boilerplate
+		//Set the context with required values to process the request
+		v := Values{
+			TraceID: uuid.New().String(),
+			Now:     time.Now(),
+		}
+		ctx := context.WithValue(r.Context(), KeyValue, &v)
 
-		if err := readiness(r.Context(), w, r); err != nil {
+		if err := handler(ctx, w, r); err != nil {
 			a.SignalShutdown()
 			return
 		}
