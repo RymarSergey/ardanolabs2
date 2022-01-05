@@ -32,7 +32,7 @@ func Respond(ctx context.Context, w http.ResponseWriter, data interface{}, statu
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
+	//w.WriteHeader(statusCode) //TODO http: superfluous response.WriteHeader call from github.com/RymarSergey/ardanolabs2/foundation/web.Respond (response.go:35)
 
 	if _, err = w.Write(jsonData); err != nil {
 		return err
